@@ -1,0 +1,39 @@
+version: "3.8"
+
+services:
+  database:
+    image: postgres:15
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=system
+      - POSTGRES_USER=system
+      - POSTGRES_PASSWORD=system
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./system-rest
+      dockerfile: Dockerfile
+    ports:
+      - "9966:9966"
+    depends_on:
+      - database
+    environment:
+      - SPRING_PROFILES_ACTIVE=postgres,spring-data-jpa
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://database:5432/system
+      - SPRING_DATASOURCE_USERNAME=system
+      - SPRING_DATASOURCE_PASSWORD=system
+
+  frontend:
+    build:
+      context: ./system-vue
+      dockerfile: Dockerfile
+    ports:
+      - "8080:4173"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

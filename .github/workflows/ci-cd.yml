@@ -1,0 +1,169 @@
+name: GitHub CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - "system-rest/**"
+      - "system-vue/**"
+      - ".github/workflows/**"
+  pull_request:
+    branches: [main, master]
+    paths:
+      - "system-rest/**"
+      - "system-vue/**"
+      - ".github/workflows/**"
+
+jobs:
+  test-backend:
+    if: github.event_name == 'push' || contains(github.event.pull_request.changed_files, 'system-rest/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: "17"
+          distribution: "temurin"
+          cache: "maven"
+
+      - name: Test Backend
+        run: |
+          cd system-rest
+          ./mvnw test
+
+  test-frontend:
+    if: github.event_name == 'push' || contains(github.event.pull_request.changed_files, 'system-vue/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+          cache: "npm"
+          cache-dependency-path: system-vue/package-lock.json
+
+      - name: Test Frontend
+        run: |
+          cd system-vue
+          npm ci
+          npm run lint
+
+  build-backend:
+    needs: test-backend
+    if: github.event_name == 'push' || contains(github.event.pull_request.changed_files, 'system-rest/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build Backend Docker Image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./system-rest
+          push: false
+          tags: system-rest:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Login to Docker Hub
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      - name: Push Backend Docker Image
+        if: github.event_name != 'pull_request'
+        run: |
+          docker tag system-rest:latest ${{ secrets.DOCKER_HUB_USERNAME }}/system-rest:latest
+          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/system-rest:latest
+
+  build-frontend:
+    needs: test-frontend
+    if: github.event_name == 'push' || contains(github.event.pull_request.changed_files, 'system-vue/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build Frontend Docker Image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./system-vue
+          push: false
+          tags: system-vue:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Login to Docker Hub
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      - name: Push Frontend Docker Image
+        if: github.event_name != 'pull_request'
+        run: |
+          docker tag system-vue:latest ${{ secrets.DOCKER_HUB_USERNAME }}/system-vue:latest
+          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/system-vue:latest
+
+  deploy-backend-staging:
+    needs: build-backend
+    if: github.event_name != 'pull_request' && (github.event_name == 'push' || contains(github.event.pull_request.changed_files, 'system-rest/'))
+    runs-on: ubuntu-latest
+    environment:
+      name: backend-staging
+      url: https://api-staging.yourdomain.com
+    steps:
+      - name: Deploy Backend to Staging
+        run: |
+          echo "Deploying backend to staging environment..."
+          # In a real scenario, you would add deployment steps here
+
+  deploy-frontend-staging:
+    needs: build-frontend
+    if: github.event_name != 'pull_request' && (github.event_name == 'push' || contains(github.event.pull_request.changed_files, 'system-vue/'))
+    runs-on: ubuntu-latest
+    environment:
+      name: frontend-staging
+      url: https://staging.yourdomain.com
+    steps:
+      - name: Deploy Frontend to Staging
+        run: |
+          echo "Deploying frontend to staging environment..."
+          # In a real scenario, you would add deployment steps here
+
+  deploy-backend-production:
+    needs: deploy-backend-staging
+    if: github.event_name != 'pull_request' && (github.event_name == 'push' || contains(github.event.pull_request.changed_files, 'system-rest/'))
+    runs-on: ubuntu-latest
+    environment:
+      name: backend-production
+      url: https://api.yourdomain.com
+    steps:
+      - name: Deploy Backend to Production
+        run: |
+          echo "Deploying backend to production environment..."
+          # In a real scenario, you would add deployment steps here
+
+  deploy-frontend-production:
+    needs: deploy-frontend-staging
+    if: github.event_name != 'pull_request' && (github.event_name == 'push' || contains(github.event.pull_request.changed_files, 'system-vue/'))
+    runs-on: ubuntu-latest
+    environment:
+      name: frontend-production
+      url: https://yourdomain.com
+    steps:
+      - name: Deploy Frontend to Production
+        run: |
+          echo "Deploying frontend to production environment..."
+          # In a real scenario, you would add deployment steps here

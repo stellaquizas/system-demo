@@ -1,0 +1,30 @@
+diff --git a/system-vue/src/components/OwnersList.vue b/system-vue/src/components/OwnersList.vue
+index abcdef1..1234567 100644
+--- a/system-vue/src/components/OwnersList.vue
++++ b/system-vue/src/components/OwnersList.vue
+@@ -97,7 +97,7 @@
+                 <div class="flex space-x-2">
+                   <button
+                     @click="deleteOwner(owner.id)"
+-                    class="p-1 text-red-500 hover:text-red-700"
++                    class="p-1 text-red-600 hover:text-red-800 transition-colors duration-200"
+                     title="Delete Owner"
+                   >
+                     <i class="fas fa-trash"></i>
+@@ -105,7 +105,7 @@
+                   <button
+                     @click="editOwner(owner)"
+-                    class="p-1 text-blue-500 hover:text-blue-700"
++                    class="p-1 text-blue-600 hover:text-blue-800 transition-colors duration-200"
+                     title="Edit Owner"
+                   >
+                     <i class="fas fa-edit"></i>
+@@ -118,7 +118,7 @@
+     </div>
+     <div class="mt-8">
+       <button
+-        class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
++        class="bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded transition-all duration-200 transform hover:scale-105"
+         @click="showAddOwnerForm = true"
+       >
+         <i class="fas fa-plus mr-2"></i>Add New Owner 
