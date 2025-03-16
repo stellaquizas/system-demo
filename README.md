@@ -245,7 +245,7 @@ Our CI/CD pipelines are configured to work with this branching strategy:
 - **Feature Branches**: Automated testing on every push and pull request
 - **Develop Branch**: Testing + building Docker images
 - **Release Branches**: Testing + building + deployment to staging environment
-- **Main Branch**: Deployment to production when tagged with version
+- **Main Branch**: Deployment to production when tagged
 - **Version Tags**: Trigger full release pipeline (build, test, deploy to production)
 
 This approach ensures:
@@ -254,6 +254,54 @@ This approach ensures:
 - The current release is stabilized separately
 - Only approved, tagged versions go to production
 - There's a clear history of what's in each environment
+
+#### 5.3.4 Implementing GitFlow in a Multi-Repository Setup
+
+The branching strategy applies differently to each repository based on its role:
+
+1. **Component Repositories** (`system-rest` and `system-vue`):
+
+   - Implement the full GitFlow branching strategy
+   - Create feature branches for all code changes: `feature/backend-tdd`, `feature/auth-implementation`, etc.
+   - Maintain a `develop` branch for integration
+   - Create release branches when preparing for a release
+   - Use the main/master branch only for production-ready code
+
+2. **Coordinator Repository** (`system-demo`):
+   - Primarily focuses on release management and coordination
+   - May not need feature branches if no code changes are being made
+   - Still maintains a `develop` branch to track the overall system development state
+   - Creates release branches to coordinate releases across all repositories
+   - Uses tags to mark system-wide versions
+
+**When to Create Feature Branches in Each Repository:**
+
+| Repository  | Create Feature Branch When...                                                |
+| ----------- | ---------------------------------------------------------------------------- |
+| system-rest | Working on backend features (Java code, API endpoints, database changes)     |
+| system-vue  | Working on frontend features (Vue components, UI changes, client-side logic) |
+| system-demo | Making changes to Docker configuration, documentation, or CI/CD pipelines    |
+
+**Example Feature Branches by Repository:**
+
+- **system-rest**:
+
+  - `feature/backend-tdd`
+  - `feature/auth-implementation`
+  - `feature/api-optimization`
+
+- **system-vue**:
+
+  - `feature/frontend-tdd`
+  - `feature/ui-redesign`
+  - `feature/client-side-validation`
+
+- **system-demo**:
+  - `feature/docker-compose-update`
+  - `feature/documentation-improvement`
+  - `feature/deployment-scripts`
+
+If you're not making code changes to a particular repository (e.g., no changes to `system-demo`), you don't need to create feature branches for that repository. However, you should still maintain the `develop` and `main` branches to track the overall system state and coordinate releases.
 
 ## 6. Database Operations
 
@@ -327,7 +375,7 @@ The CI/CD setup follows a multi-repository approach with branch-based workflows:
 
 1. **Three Separate Repositories**: Each with its own CI/CD pipeline
 
-   - `system-demo`: Coordinator repository with release workflows
+   - `system-demo`: Coordinator repository with release workflows only
    - `system-rest`: Backend repository with full CI/CD pipeline
    - `system-vue`: Frontend repository with full CI/CD pipeline
 
@@ -341,6 +389,8 @@ The CI/CD setup follows a multi-repository approach with branch-based workflows:
 
 3. **Independent Pipelines**: Frontend and backend have separate CI/CD pipelines
 4. **Coordinated Releases**: Version tags are synchronized across all repositories
+
+**Important Note**: The `system-demo` repository does not handle CI/CD for the component repositories. It only manages release workflows and coordinates versioning across repositories. Each component repository (`system-rest` and `system-vue`) has its own independent CI/CD pipeline that handles testing, building, and deploying that specific component.
 
 ### 8.2 CI/CD Features
 
@@ -356,11 +406,19 @@ Both CI/CD pipelines include:
 
 ### 8.3 GitHub Actions Setup
 
-The GitHub Actions workflow is defined in `.github/workflows/ci-cd.yml` and includes:
+The GitHub Actions workflows are defined in:
 
-- **Test Stage**: Runs backend and frontend tests
-- **Build Stage**: Builds Docker images for backend and frontend
-- **Deploy Stages**: Deploys to staging and production environments
+- **system-demo**: `.github/workflows/release.yml` - Handles release management only
+- **system-rest**: `.github/workflows/ci-cd.yml` - Full CI/CD pipeline for backend
+- **system-vue**: `.github/workflows/ci-cd.yml` - Full CI/CD pipeline for frontend
+
+Each workflow includes:
+
+- **Test Stage**: Runs tests for the component
+- **Build Stage**: Builds Docker images for the component
+- **Deploy Stages**: Deploys to development, staging, and production environments based on branch
+
+**Note**: The `ci-cd.yml` file in the system-demo repository is no longer needed and should be removed, as each component repository has its own CI/CD pipeline.
 
 #### 8.3.1 GitHub Actions Demo Steps
 
@@ -401,11 +459,19 @@ The GitHub Actions workflow is defined in `.github/workflows/ci-cd.yml` and incl
 
 ### 8.4 GitLab CI/CD Setup
 
-The GitLab CI/CD pipeline is defined in `.gitlab-ci.yml` and includes:
+The GitLab CI/CD pipelines are defined in:
 
-- **Test Stage**: Runs backend and frontend tests
-- **Build Stage**: Builds Docker images for backend and frontend
-- **Deploy Stages**: Deploys to staging and production environments
+- **system-demo**: `.gitlab-ci.yml` - Handles release management only
+- **system-rest**: `.gitlab-ci.yml` - Full CI/CD pipeline for backend
+- **system-vue**: `.gitlab-ci.yml` - Full CI/CD pipeline for frontend
+
+Each pipeline includes:
+
+- **Test Stage**: Runs tests for the component
+- **Build Stage**: Builds Docker images for the component
+- **Deploy Stages**: Deploys to development, staging, and production environments based on branch
+
+**Note**: The CI/CD configuration in the system-demo repository has been simplified to focus only on release management, as each component repository has its own CI/CD pipeline.
 
 #### 8.4.1 GitLab CI/CD Demo Steps
 
@@ -470,18 +536,21 @@ The GitLab CI/CD pipeline is defined in `.gitlab-ci.yml` and includes:
 
 ## 9. Project Structure
 
-The project follows a monorepo structure with separate components for frontend, backend, and CI/CD configuration:
+The project follows a multi-repository structure with separate components for frontend, backend, and coordination:
 
 ```
-system-demo/                      # Root directory
+system-demo/                      # Coordinator repository
 ├── .github/                      # GitHub Actions configuration
 │   └── workflows/
-│       └── ci-cd.yml             # GitHub CI/CD pipeline definition
-├── .gitlab-ci.yml                # GitLab CI/CD pipeline definition
+│       └── release.yml           # GitHub release workflow
+├── .gitlab-ci.yml                # GitLab release pipeline
 ├── docker-compose.yml            # Container orchestration for all components
 ├── README.md                     # Project documentation (this file)
 │
-├── system-rest/                  # Backend component
+├── system-rest/                  # Backend component repository (separate Git repo)
+│   ├── .github/workflows/        # GitHub Actions configuration for backend
+│   │   └── ci-cd.yml             # Backend CI/CD pipeline
+│   ├── .gitlab-ci.yml            # GitLab CI/CD pipeline for backend
 │   ├── Dockerfile                # Backend container definition
 │   ├── pom.xml                   # Maven project configuration
 │   ├── src/                      # Source code
@@ -491,7 +560,10 @@ system-demo/                      # Root directory
 │   │       └── resources/        # Configuration files
 │   └── target/                   # Compiled output
 │
-├── system-vue/                   # Frontend component
+├── system-vue/                   # Frontend component repository (separate Git repo)
+│   ├── .github/workflows/        # GitHub Actions configuration for frontend
+│   │   └── ci-cd.yml             # Frontend CI/CD pipeline
+│   ├── .gitlab-ci.yml            # GitLab CI/CD pipeline for frontend
 │   ├── Dockerfile                # Frontend container definition
 │   ├── package.json              # NPM dependencies
 │   ├── src/                      # Source code
@@ -510,6 +582,8 @@ system-demo/                      # Root directory
 ├── setup-github-cicd.sh          # Script to set up GitHub CI/CD
 └── setup-gitlab-cicd.sh          # Script to set up GitLab CI/CD
 ```
+
+**Note**: The `.gitignore` file in the system-demo repository is configured to ignore the `system-rest/` and `system-vue/` directories, as they are separate Git repositories.
 
 ## 10. Next Steps (TODO)
 
