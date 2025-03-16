@@ -148,6 +148,113 @@ npm install
 npm run dev
 ```
 
+### 5.3 Branching Strategy and Development Workflow
+
+This project follows a GitFlow-inspired branching strategy optimized for enterprise development with scheduled releases:
+
+#### 5.3.1 Branch Types
+
+- **main/master**: Long-term record of production releases
+- **develop**: Integration branch for features
+- **feature/\***: Individual feature development (e.g., `feature/login-page`)
+- **release/\***: Preparation for scheduled releases (e.g., `release/1.0.0`)
+- **hotfix/\***: Emergency fixes for production issues (e.g., `hotfix/critical-bug`)
+
+#### 5.3.2 Development Workflow
+
+1. **Feature Development**:
+
+   ```bash
+   # Create a feature branch from develop
+   git checkout develop
+   git pull
+   git checkout -b feature/new-feature
+
+   # Work on your feature...
+
+   # Push changes to remote
+   git push -u origin feature/new-feature
+
+   # Create a Pull Request to merge into develop
+   ```
+
+2. **Release Preparation** (Biannual Schedule):
+
+   ```bash
+   # Create a release branch from develop
+   git checkout develop
+   git pull
+   git checkout -b release/1.0.0
+
+   # Only bug fixes go into release branch
+   # Testing and stabilization happens here
+
+   # Push release branch
+   git push -u origin release/1.0.0
+   ```
+
+3. **Release to Production**:
+
+   ```bash
+   # When release is stable
+   git checkout main
+   git pull
+   git merge release/1.0.0
+
+   # Tag with version
+   git tag -a v1.0.0 -m "Version 1.0.0"
+   git push origin main --tags
+
+   # Also merge back to develop
+   git checkout develop
+   git pull
+   git merge release/1.0.0
+   git push origin develop
+   ```
+
+4. **Hotfixes** (if needed):
+
+   ```bash
+   # Create hotfix branch from main
+   git checkout main
+   git pull
+   git checkout -b hotfix/critical-bug
+
+   # Fix the issue...
+
+   # Merge to main
+   git checkout main
+   git pull
+   git merge hotfix/critical-bug
+
+   # Tag with incremented version
+   git tag -a v1.0.1 -m "Version 1.0.1"
+   git push origin main --tags
+
+   # Also merge to develop
+   git checkout develop
+   git pull
+   git merge hotfix/critical-bug
+   git push origin develop
+   ```
+
+#### 5.3.3 CI/CD Integration with Branching Strategy
+
+Our CI/CD pipelines are configured to work with this branching strategy:
+
+- **Feature Branches**: Automated testing on every push and pull request
+- **Develop Branch**: Testing + building Docker images
+- **Release Branches**: Testing + building + deployment to staging environment
+- **Main Branch**: Deployment to production when tagged with version
+- **Version Tags**: Trigger full release pipeline (build, test, deploy to production)
+
+This approach ensures:
+
+- Developers can continue working on features for the next release
+- The current release is stabilized separately
+- Only approved, tagged versions go to production
+- There's a clear history of what's in each environment
+
 ## 6. Database Operations
 
 ### 6.1 View Database Content
@@ -216,14 +323,24 @@ This project includes CI/CD configurations for both GitHub Actions and GitLab CI
 
 ### 8.1 CI/CD Architecture Overview
 
-The CI/CD setup follows a monorepo approach with path-based filtering:
+The CI/CD setup follows a multi-repository approach with branch-based workflows:
 
-1. **Single Repository**: All code (frontend and backend) is in one repository
-2. **Path-Based Triggers**: CI/CD pipelines run based on which files changed
-   - Changes to `system-rest/**` trigger only backend pipelines
-   - Changes to `system-vue/**` trigger only frontend pipelines
+1. **Three Separate Repositories**: Each with its own CI/CD pipeline
+
+   - `system-demo`: Coordinator repository with release workflows
+   - `system-rest`: Backend repository with full CI/CD pipeline
+   - `system-vue`: Frontend repository with full CI/CD pipeline
+
+2. **Branch-Based Workflows**: CI/CD pipelines behave differently based on branch type
+
+   - `feature/*` branches: Run tests only
+   - `develop` branch: Run tests and build Docker images
+   - `release/*` branches: Run tests, build images, deploy to staging
+   - `main/master` branch: Deploy to production when tagged
+   - Version tags (`v*.*.*`): Trigger full release pipeline
+
 3. **Independent Pipelines**: Frontend and backend have separate CI/CD pipelines
-4. **Parallel Execution**: Pipelines run in parallel for efficiency
+4. **Coordinated Releases**: Version tags are synchronized across all repositories
 
 ### 8.2 CI/CD Features
 
@@ -421,17 +538,17 @@ This project has a one-month development timeline with the following key milesto
 
 ### 10.2 Versioning System
 
-1. **Centralized Versioning Implementation**:
+1. **Centralized Versioning Implementation**: ✅
 
-   - Implement semantic versioning (MAJOR.MINOR.PATCH) in the system-demo repository
-   - Display version number in UI (tooltip on hover over logo)
-   - Include version in API responses
-   - Create version history documentation
+   - ✅ Implement semantic versioning (MAJOR.MINOR.PATCH) in the system-demo repository
+   - ✅ Display version number in UI (tooltip on hover over logo)
+   - ✅ Include version in API responses
+   - ✅ Create version history documentation
 
 2. **Release Management**:
 
    - Set up automated release notes generation
-   - Implement changelog tracking
+   - ✅ Implement changelog tracking
    - Create release branches strategy
    - Establish version tagging in Git for the entire system
 
