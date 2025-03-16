@@ -29,6 +29,15 @@ This project is organized as three separate repositories to support team indepen
 2. **system-rest**: Contains the Spring Boot backend code (managed by the backend team)
 3. **system-vue**: Contains the Vue.js frontend code (managed by the frontend team)
 
+When set up for development, the component repositories (`system-rest` and `system-vue`) should be cloned inside the main `system-demo` repository directory. The `.gitignore` file in the main repository is configured to ignore these component folders, allowing each repository to maintain its own independent Git history.
+
+This structure enables:
+
+- Independent development and versioning of each component
+- Separate CI/CD pipelines for frontend and backend
+- Centralized orchestration and deployment through the main repository
+- Team autonomy while maintaining system cohesion
+
 ### 3.1 Versioning Strategy
 
 - The main **system-demo** repository controls the **single version** for the entire system
@@ -57,71 +66,62 @@ For detailed version management instructions, see [VERSION-README.md](VERSION-RE
 - Node.js (for frontend development)
 - VS Code (recommended, with extensions for Java, Spring Boot, and Vue.js)
 
-### 4.2 Setup for Users
+### 4.2 Setup for Developers
 
-1. Clone all three repositories into the same parent directory:
+This project is organized as three separate repositories. Developers need to clone all three repositories and place them in the correct structure:
+
+1. **Clone All Three Repositories**:
 
    ```bash
-   # Create a parent directory
-   mkdir system-project
-   cd system-project
-
-   # Clone the coordinator repository
+   # Clone the main coordinator repository
    git clone https://github.com/YOUR_USERNAME/system-demo.git
+   cd system-demo
 
-   # Clone the component repositories
+   # Clone the component repositories inside the system-demo directory
    git clone https://github.com/YOUR_USERNAME/system-rest.git
    git clone https://github.com/YOUR_USERNAME/system-vue.git
-
-   # Navigate to the coordinator directory
-   cd system-demo
    ```
 
-2. Start the application:
+   The final directory structure should look like this:
+
+   ```
+   system-demo/             # Main coordinator repository
+   ├── system-rest/         # Backend component repository
+   └── system-vue/          # Frontend component repository
+   ```
+
+   Note: The `.gitignore` file in the main repository is already configured to ignore the component folders, allowing each repository to maintain its own Git history.
+
+2. **Start the Application**:
+
    ```bash
+   # From the system-demo directory
    docker compose up --build
    ```
 
-### 4.3 Setup for Developers
+3. **Component-Specific Development**:
 
-If you're a developer working on this project:
+   - **Backend Development**:
 
-1. **Backend Developers**:
+     ```bash
+     # Navigate to the backend component
+     cd system-rest
 
-   ```bash
-   # Clone the backend repository
-   git clone https://github.com/YOUR_USERNAME/system-rest.git
-   cd system-rest
+     # Set up your development environment
+     # (Follow the instructions in the backend component README)
+     ```
 
-   # Set up your development environment
-   # (Follow the instructions in the backend repository README)
-   ```
+   - **Frontend Development**:
 
-2. **Frontend Developers**:
+     ```bash
+     # Navigate to the frontend component
+     cd system-vue
 
-   ```bash
-   # Clone the frontend repository
-   git clone https://github.com/YOUR_USERNAME/system-vue.git
-   cd system-vue
+     # Set up your development environment
+     # (Follow the instructions in the frontend component README)
+     ```
 
-   # Set up your development environment
-   # (Follow the instructions in the frontend repository README)
-   ```
-
-3. **Full-Stack Developers**:
-
-   ```bash
-   # Clone all repositories
-   git clone https://github.com/YOUR_USERNAME/system-demo.git
-   git clone https://github.com/YOUR_USERNAME/system-rest.git
-   git clone https://github.com/YOUR_USERNAME/system-vue.git
-
-   # Start the system using Docker Compose
-   cd system-demo
-   docker compose up --build
-   ```
-
-### 4.4 Access the Application
+### 4.3 Access the Application
 
 - Frontend: http://localhost:8080 (when running in Docker) or http://localhost:5173 (when running with npm)
 - Backend API: http://localhost:9966/system/api
